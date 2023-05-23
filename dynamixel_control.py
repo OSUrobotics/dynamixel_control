@@ -1,5 +1,5 @@
 from dynamixel_sdk import *                    # Uses Dynamixel SDK library   
-import dynamixel as dynamixel
+import dynamixel_control.dynamixel as dynamixel
 from time import sleep
 import os
 import pickle as pkl
@@ -349,8 +349,9 @@ class Dynamixel:
         Returns:
             none
         """
-
-        path_to = os.path.abspath(os.path.dirname(__file__))
+        # TODO: Add try except here for paths
+        path_to = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
+        # print("PATH TO", os.path.dirname(path_to)) This backs us up one directory
         file_path = os.path.join(path_to, file_location, file_name)
       
         with open(file_path, 'rb') as f:
