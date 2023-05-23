@@ -3,13 +3,13 @@
 ## Use
 Use this library to communicate with Dynamixel motors. Currently, this is set up for position control and feedback for Dynamixel XL-320 and XL-330 motors, although more can be added with ease.
 
-## Instalation and Dependicies
+## Instalation and Dependencies
 Clone this repo into your project with:
 ```bash
 git clone https://github.com/OSUrobotics/dynamixel_control.git
 ```
 
-This library requires the following dependicies:
+This library requires the following dependencies:
 - Numpy
 ```bash
 python3 -m pip install numpy

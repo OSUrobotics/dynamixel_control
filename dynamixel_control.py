@@ -457,7 +457,7 @@ class Dynamixel:
 
     def go_to_initial_position(self, file_location="actual_trajectories_2v2", file_name="N_2v2_1.1_1.1_1.1_1.1.pkl"):
         #try: 
-        self.go_to_start()
+        self.go_to_center()
         sleep(2)
         self.flag = True
         pickle_length = self.load_pickle(file_location, file_name)
@@ -469,21 +469,19 @@ class Dynamixel:
             #print("ahhh")
             #self.end_program()
 
-    def go_to_start(self):
-        #try: 
-        for id in self.dxls.keys():
-            if id == 0:
-                self.update_goal(id, self.dxls[id].center_pos)
-            elif id == 2:
-                self.update_goal(id, self.dxls[id].center_pos)
-            else:
-                self.update_goal(id, self.dxls[id].center_pos)
-        
-        self.send_goal()
+    def go_to_center(self):
+        """ Sends all connected Dynamixels to their center position as specified in the calibration.
 
-        #except:
-            #print("ahhh")
-            #self.end_program()
+        Args:
+            none
+        Returns:
+            none
+        """
+        
+        for id in self.dxls.keys():
+            self.update_goal(id, self.dxls[id].center_pos)
+            
+        self.send_goal()
 
 
 if __name__ == "__main__":
@@ -503,7 +501,7 @@ if __name__ == "__main__":
         #Dynamixel_control.test_write()
         #input("press enter to continue")
         #Dynamixel_control.update_speed(100)
-    #Dynamixel_control.go_to_start()
+    #Dynamixel_control.go_to_center()
     sleep(1)
     print("Speed done")
     try:
