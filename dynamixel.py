@@ -1,5 +1,5 @@
 from dynamixel_sdk import *                    # Uses Dynamixel SDK library   
-from dxl import Dxl
+from dynamixel_control.dxl import Dxl
 from time import sleep
 import os
 import pickle as pkl
@@ -19,8 +19,8 @@ class Dynamixel:
     
     """
 
-    def __init__(self): 
-        self.DEVICENAME = '/dev/ttyUSB1'
+    def __init__(self, port = '/dev/ttyUSB0'): 
+        self.DEVICENAME = port
         self.PROTOCOL_VERSION = 2.0
         self.BAUDRATE = 57600
 
