@@ -41,7 +41,6 @@ class Dxl:
                                 "ADDR_present_position": 132,
                                 "LEN_present_position": 4
             }
-            print("This worked")
         else:
             print(dxl_dict["type"])
             ex("Dynamixel type not implemented")

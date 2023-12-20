@@ -494,6 +494,12 @@ class Dynamixel:
             
         self.send_goal()
 
+    def go_to_position_all(self, target):
+        # Moves all connected motors to a target
+        # Input is a list the length of the number of motors, in the order they were added
+        for i, id in enumerate(self.dxls.keys()):
+            self.update_goal(id, target[i])
+        self.send_goal()
 
 if __name__ == "__main__":
     Dynamixel_control = Dynamixel()
