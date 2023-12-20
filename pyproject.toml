@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dynamixel_control"
-version = "0.2.4"
+version = "0.2.4a4"
 authors = [
   { name="Kyle", email="dufrenek@oregonstate.edu" },
 ]

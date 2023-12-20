@@ -39,7 +39,10 @@ class Dxl:
                                 "LEN_goal_position": 4,
 
                                 "ADDR_present_position": 132,
-                                "LEN_present_position": 4
+                                "LEN_present_position": 4,
+
+                                "ADDR_present_torque": 126,
+                                "LEN_present_torque": 2
             }
         else:
             print(dxl_dict["type"])

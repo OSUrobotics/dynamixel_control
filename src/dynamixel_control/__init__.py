@@ -5,7 +5,7 @@
 # Package for controlling Dynamixel motors.
 # """
 
-# __version__ = "0.2.4"
+# __version__ = "0.2.4a4"
 # __author__ = 'Kyle DuFrene'
 # __credits__ = 'Oregon State University'
 
