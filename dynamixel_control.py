@@ -20,15 +20,35 @@ class Dynamixel:
     """
 
     def __init__(self): 
-        self.DEVICENAME = '/dev/ttyUSB1'
+        self.DEVICENAME = '/dev/ttyUSB0'
         self.PROTOCOL_VERSION = 2.0
         self.BAUDRATE = 57600
 
-        self.portHandler = PortHandler(self.DEVICENAME)
+        # Try connecting on ttyUSB0 then ttyUSB1 then ttyUSB2
+        # If you have a fixed port, or something else the U2D2 is attached to, change this to match
+        try:
+            self.DEVICENAME = '/dev/ttyUSB0'
+            self.portHandler = PortHandler(self.DEVICENAME)
+        except:
+            print("bro")
+        """try: 
+                self.DEVICENAME = '/dev/ttyUSB1'
+                self.portHandler = PortHandler(self.DEVICENAME)
+            except OSError:
+                try: 
+                    self.DEVICENAME = '/dev/ttyUSB2'
+                    self.portHandler = PortHandler(self.DEVICENAME)
+                except OSError:
+                    sys.exit("Could not open port.")"""
+                
+
+
+
+
+        
         self.event = threading.Event()
 
-        # Create flag for first bulk read
-        self.first_bulk_read = True
+        # Create flag for first movement to shift motors
         self.shift_values = False
         
         # Initialize PacketHandler instance
@@ -75,6 +95,17 @@ class Dynamixel:
 
         # Create a Dxl object and add it to our dictionary
         self.dxls[ID_number] = dynamixel.Dxl(dynamixel_dict)
+
+    def reboot_dynamixel(self):
+        # Try reboot
+        # Dynamixel LED will flicker while it reboots
+        for id in self.dxls.keys():
+            self.packetHandler.reboot(self.portHandler, id)
+        
+        for id in self.dxls.keys():
+            self.enable_torque(id, True)
+
+        print("All Dynamixels rebooted and on.")
 
     ## Here are the new functions!!!
     def send_parameters(self):
@@ -231,6 +262,8 @@ class Dynamixel:
         elif self.dxls[id].goal_position > self.dxls[id].max_bound:
             self.dxls[id].goal_position = self.dxls[id].max_bound
 
+        print( self.dxls[id].goal_position)
+
 
     def setup_all(self):
         """ "Starts" all Dynamixels - this enables the torque and sets up the position read parameter
@@ -253,10 +286,7 @@ class Dynamixel:
             dxl_addparam_result = self.groupBulkRead.addParam(id, self.dxls[id].dxl_params["ADDR_present_position"], self.dxls[id].dxl_params["LEN_present_position"])
             if dxl_addparam_result != True:
                 print("[ID:%03d] groupBulkRead addparam failed" % id)
-                quit()
-        
-        self.first_bulk_read = False
-    
+                quit()    
 
     def bulk_read_pos(self):
         """ Check and read current positions from each Dynamixel
@@ -312,31 +342,7 @@ class Dynamixel:
             #print(f"Current torque: {self.dxls[id].current_torque}")
             
         self.groupBulkRead.clearParam()
-
-    
-
-    
-    
-    
-    
-
         
-    def end_program(self):
-        """ Turns off Dynamixel torque and closes the port. Run this upon exit/program end.
-
-        Args:
-            none
-        Returns:
-            none
-        
-        """
-
-        # Disable torque
-        for id in self.dxls.keys():
-            self.enable_torque(id, False)
-
-        self.portHandler.closePort()  
-
     def load_pickle(self, file_location="Open_Loop_Data", file_name="angles_N.pkl") -> int:
         """ Open and load in the radian values (relative positions) from the pickle file. Convert them to positions from 0 to 1023 (how the Dynamixel XL-320 uses them). Updates the joint angles lists.
 
@@ -426,9 +432,6 @@ class Dynamixel:
             self.dxls[id].goal_position = self.dxls[id].center_pos + self.convert_rad_to_pos(self.data[i]["joint_" + str(id_counter)])
             id_counter += 1
 
-
-
-
     def replay_pickle_data(self, file_location="Open_Loop_Data", file_name="angles_N.pkl", delay_between_steps: float = .01):
             
         # Get our pickle data
@@ -452,23 +455,48 @@ class Dynamixel:
             self.skipp = True
             #self.bulk_read_pos()
 
-        
-
-    
-
     def go_to_initial_position(self, file_location="actual_trajectories_2v2", file_name="N_2v2_1.1_1.1_1.1_1.1.pkl"):
-        #try: 
+        """ Sends all connected dynamixels to their center position, then to the first row of the loaded pickle file.
+
+        Args:
+            none
+        Returns:
+            none
+        """
+        
+        # Go to motor center position
         self.go_to_center()
+       
         sleep(2)
-        self.flag = True
-        pickle_length = self.load_pickle(file_location, file_name)
+        
+        # Go to the start position, shifted
+        self.load_pickle(file_location, file_name)
+        self.shift_values = True
         self.map_pickle(0)
         self.send_goal()
+        self.shift_values = False
         sleep(1)
 
-        #except:
-            #print("ahhh")
-            #self.end_program()
+    def go_to_initial_position_angles(self, target_angles=[0,0,0,0]):
+        """ Sends all connected dynamixels to their center position, then to the first row of the loaded pickle file.
+
+        Args:
+            none
+        Returns:
+            none
+        """
+        
+        # Go to motor center position
+        self.go_to_center()
+       
+        sleep(2)
+        for i, id in enumerate(self.dxls.keys()):
+        
+            self.dxls[id].goal_position = self.dxls[id].center_pos + self.convert_rad_to_pos(target_angles[i])
+ 
+
+        self.send_goal()
+        sleep(1)
 
     def go_to_center(self):
         """ Sends all connected Dynamixels to their center position as specified in the calibration.
@@ -480,10 +508,29 @@ class Dynamixel:
         """
         
         for id in self.dxls.keys():
+            print(self.dxls[id].center_pos)
             self.update_goal(id, self.dxls[id].center_pos)
+
+
             
         self.send_goal()
 
+
+    def end_program(self):
+        """ Turns off Dynamixel torque and closes the port. Run this upon exit/program end.
+
+        Args:
+            none
+        Returns:
+            none
+        
+        """
+
+        # Disable torque
+        for id in self.dxls.keys():
+            self.enable_torque(id, False)
+
+        self.portHandler.closePort()  
 
 if __name__ == "__main__":
     Dynamixel_control = Dynamixel()
@@ -491,13 +538,20 @@ if __name__ == "__main__":
     if True:
         Dynamixel_control.add_dynamixel(type="XL-330", ID_number=0, calibration=[1023,2048,3073], shift = 0) # Negative on left side was -25
         Dynamixel_control.add_dynamixel(type="XL-330", ID_number=1, calibration=[1023,2048,3073], shift = 0)
-        Dynamixel_control.add_dynamixel(type="XL-330", ID_number=3, calibration=[1023,2048,3073], shift = 0) # Positive on right side was 25
-        Dynamixel_control.add_dynamixel(type="XL-330", ID_number=4, calibration=[1023,2048,3073], shift = 0)
+        Dynamixel_control.add_dynamixel(type="XL-330", ID_number=2, calibration=[1023,2048,3073], shift = 0) # Positive on right side was 25
+        Dynamixel_control.add_dynamixel(type="XL-330", ID_number=3, calibration=[1023,2048,3073], shift = 0)
         #4565, 545, 450, 553
         Dynamixel_control.set_speed(100)
         Dynamixel_control.setup_all()
+
+ 
+        
+        #original number
         Dynamixel_control.update_PID(1000,400,2000)
         
+        # Nigel's test PID for small actions
+        # Dynamixel_control.update_PID(2000,800,2000)
+
         #Dynamixel_control.update_speed(400)
         #Dynamixel_control.test_write()
         #input("press enter to continue")
